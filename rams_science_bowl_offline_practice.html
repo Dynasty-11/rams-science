@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#2457d6">
+<title>Science Bowl Offline</title>
+<style>
+:root{--bg:#f3f5f8;--card:#fff;--text:#17202a;--muted:#667085;--line:#d8dee5;--blue:#2457d6;--green:#16794b;--red:#b42318}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{min-height:100vh}
+.wrap{width:100%;max-width:760px;margin:0 auto;padding:calc(12px + env(safe-area-inset-top)) 14px calc(24px + env(safe-area-inset-bottom))}
+.card{background:var(--card);border-radius:18px;padding:18px;margin:12px 0;box-shadow:0 3px 16px rgba(0,0,0,.07)}
+h1{font-size:25px;margin:0 0 5px}
+h2{font-size:20px;margin:0 0 14px}
+.muted{color:var(--muted);font-size:14px;line-height:1.45}
+.controls{display:grid;gap:10px}
+label{font-size:13px;font-weight:600}
+select,button{width:100%;min-height:48px;border-radius:12px;font-size:16px;padding:10px 13px;border:1px solid var(--line)}
+select{background:#fff;color:var(--text)}
+button{border:0;background:var(--blue);color:#fff;font-weight:650;touch-action:manipulation}
+button.secondary{background:#e9edf2;color:var(--text)}
+button.good{background:var(--green)}
+button.bad{background:var(--red)}
+button:disabled{opacity:.45}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.actions.three{grid-template-columns:1fr 1fr 1fr}
+.q{font-size:21px;line-height:1.5;margin:18px 0}
+.answer{padding:14px;border-radius:12px;background:#edf8f1;margin-top:13px;line-height:1.5;display:none}
+.answer.wrong{background:#fff1f0}
+progress{width:100%;height:10px}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.tag{background:#eef2ff;color:#3349a8;padding:5px 9px;border-radius:999px;font-size:12px}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.stat{background:#f7f8fa;border-radius:12px;padding:12px}
+.num{font-size:22px;font-weight:700}
+.hidden{display:none!important}
+#status{padding:10px;border-radius:10px;background:#f7f8fa;margin-top:10px}
+@media(min-width:600px){.controls{grid-template-columns:repeat(3,1fr);align-items:end}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>National Science Bowl — Offline</h1>
+    <div class="muted">Safari-ready single-file practice app. No internet, API, library, or external file required.</div>
+    <div id="status" class="muted">Starting…</div>
+  </div>
+
+  <section class="card" id="setup">
+    <h2>Start Practice</h2>
+    <div class="controls">
+      <div><label for="subject">Subject</label><select id="subject">
+        <option value="">All subjects</option>
+        <option>BIOLOGY</option><option>CHEMISTRY</option><option>EARTH AND SPACE</option>
+        <option>ENERGY</option><option>MATH</option><option>PHYSICS</option>
+      </select></div>
+      <div><label for="count">Questions</label><select id="count">
+        <option value="10">10</option><option value="25">25</option><option value="50">50</option>
+        <option value="80">80</option>
+      </select></div>
+      <div><label>&nbsp;</label><button id="startBtn" type="button">Start Practice</button></div>
+    </div>
+  </section>
+
+  <section class="card hidden" id="quiz">
+    <div class="tags"><span class="tag" id="meta"></span><span class="tag" id="subjectTag"></span></div>
+    <progress id="prog" value="0" max="1"></progress>
+    <div class="q" id="question"></div>
+    <div class="actions">
+      <button id="correctBtn" class="good" type="button">Correct</button>
+      <button id="incorrectBtn" class="bad" type="button">Incorrect</button>
+    </div>
+    <button id="revealBtn" class="secondary" type="button" style="margin-top:9px">Reveal Answer</button>
+    <div class="answer" id="answer"></div>
+    <div class="actions" style="margin-top:12px">
+      <button id="nextBtn" type="button">Next →</button>
+      <button id="endBtn" class="secondary" type="button">End Practice</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Progress</h2>
+    <div class="stats">
+      <div class="stat"><div class="num" id="seen">0</div><div class="muted">Answered</div></div>
+      <div class="stat"><div class="num" id="correct">0</div><div class="muted">Correct</div></div>
+      <div class="stat"><div class="num" id="pct">0%</div><div class="muted">Accuracy</div></div>
+      <div class="stat"><div class="num" id="score">0</div><div class="muted">Points</div></div>
+    </div>
+    <button id="missedBtn" class="secondary" type="button" style="margin-top:12px">Review Missed</button>
+    <button id="resetBtn" class="secondary" type="button" style="margin-top:8px">Reset Progress</button>
+    <div id="subjectStats" class="muted" style="margin-top:12px"></div>
+  </section>
+</div>
+
+<script>
+"use strict";
+
+/* Everything needed by the app is embedded below. */
+const BANK = [{"id": "offline-1", "category": "BIOLOGY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What organelle is primarily responsible for producing ATP in eukaryotic cells?", "tossup_answer": "Mitochondrion", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-2", "category": "BIOLOGY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What process converts glucose into pyruvate and occurs in the cytoplasm?", "tossup_answer": "Glycolysis", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-3", "category": "BIOLOGY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What molecule carries amino acids to the ribosome during translation?", "tossup_answer": "tRNA", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-4", "category": "BIOLOGY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the functional unit of the kidney?", "tossup_answer": "Nephron", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-5", "category": "BIOLOGY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What type of cell division produces four genetically distinct haploid cells?", "tossup_answer": "Meiosis", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-6", "category": "BIOLOGY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What pigment absorbs light energy for photosynthesis in plants?", "tossup_answer": "Chlorophyll", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-7", "category": "BIOLOGY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What nitrogenous base is found in RNA but not DNA?", "tossup_answer": "Uracil", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-8", "category": "BIOLOGY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What structure controls movement of substances into and out of a cell?", "tossup_answer": "Cell membrane", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-9", "category": "BIOLOGY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What hormone lowers blood glucose concentration?", "tossup_answer": "Insulin", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-10", "category": "BIOLOGY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What part of the brain is chiefly associated with balance and coordination?", "tossup_answer": "Cerebellum", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-11", "category": "BIOLOGY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What relationship benefits both organisms?", "tossup_answer": "Mutualism", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-12", "category": "BIOLOGY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What protein gives red blood cells their oxygen-carrying capacity?", "tossup_answer": "Hemoglobin", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-13", "category": "BIOLOGY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What enzyme unwinds the DNA double helix during replication?", "tossup_answer": "Helicase", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-14", "category": "BIOLOGY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the term for a change in a DNA sequence?", "tossup_answer": "Mutation", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-15", "category": "BIOLOGY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What organelle contains most of a eukaryotic cell's DNA?", "tossup_answer": "Nucleus", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-16", "category": "CHEMISTRY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the atomic number of carbon?", "tossup_answer": "6", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-17", "category": "CHEMISTRY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What particle determines the identity of an element?", "tossup_answer": "Proton", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-18", "category": "CHEMISTRY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the pH of a neutral aqueous solution at 25 degrees Celsius?", "tossup_answer": "7", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-19", "category": "CHEMISTRY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What type of bond involves sharing electron pairs between atoms?", "tossup_answer": "Covalent bond", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-20", "category": "CHEMISTRY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What gas is produced when an acid reacts with a carbonate?", "tossup_answer": "Carbon dioxide", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-21", "category": "CHEMISTRY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the molar mass of water, approximately?", "tossup_answer": "18 g/mol", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-22", "category": "CHEMISTRY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What element has the chemical symbol Na?", "tossup_answer": "Sodium", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-23", "category": "CHEMISTRY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What law states that mass is neither created nor destroyed in a chemical reaction?", "tossup_answer": "Law of conservation of mass", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-24", "category": "CHEMISTRY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the oxidation state of oxygen in most compounds?", "tossup_answer": "-2", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-25", "category": "CHEMISTRY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What separation method uses differences in boiling points?", "tossup_answer": "Distillation", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-26", "category": "CHEMISTRY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the smallest unit of an element that retains its chemical identity?", "tossup_answer": "Atom", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-27", "category": "CHEMISTRY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What type of reaction combines substances to form a more complex product?", "tossup_answer": "Synthesis", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-28", "category": "CHEMISTRY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What gas makes up the largest fraction of Earth's atmosphere?", "tossup_answer": "Nitrogen", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-29", "category": "CHEMISTRY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is Avogadro's number, approximately?", "tossup_answer": "6.022 × 10^23", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-30", "category": "CHEMISTRY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What element has the symbol Fe?", "tossup_answer": "Iron", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-31", "category": "PHYSICS", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the SI unit of force?", "tossup_answer": "Newton", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-32", "category": "PHYSICS", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the acceleration due to gravity near Earth's surface?", "tossup_answer": "9.8 m/s^2", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-33", "category": "PHYSICS", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What quantity equals mass multiplied by velocity?", "tossup_answer": "Momentum", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-34", "category": "PHYSICS", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What law states that an object remains at rest or in uniform motion unless acted upon by a net external force?", "tossup_answer": "Newton's first law", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-35", "category": "PHYSICS", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the SI unit of electrical resistance?", "tossup_answer": "Ohm", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-36", "category": "PHYSICS", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What form of energy is associated with an object's position?", "tossup_answer": "Potential energy", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-37", "category": "PHYSICS", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What equation relates wave speed, frequency, and wavelength?", "tossup_answer": "v = fλ", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-38", "category": "PHYSICS", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What phenomenon causes a change in observed frequency when source and observer move relative to one another?", "tossup_answer": "Doppler effect", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-39", "category": "PHYSICS", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the SI unit of power?", "tossup_answer": "Watt", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-40", "category": "PHYSICS", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What force opposes relative motion between surfaces in contact?", "tossup_answer": "Friction", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-41", "category": "PHYSICS", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the product of force and displacement in the direction of the force?", "tossup_answer": "Work", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-42", "category": "PHYSICS", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What type of electromagnetic radiation has the shortest wavelength?", "tossup_answer": "Gamma rays", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-43", "category": "PHYSICS", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What circuit component stores electrical energy in an electric field?", "tossup_answer": "Capacitor", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-44", "category": "PHYSICS", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What principle states that pressure applied to an enclosed fluid is transmitted throughout the fluid?", "tossup_answer": "Pascal's principle", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-45", "category": "PHYSICS", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What quantity is measured in joules?", "tossup_answer": "Energy", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-46", "category": "EARTH AND SPACE", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What layer of Earth is composed primarily of solid iron and nickel?", "tossup_answer": "Inner core", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-47", "category": "EARTH AND SPACE", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What process breaks rocks down at Earth's surface?", "tossup_answer": "Weathering", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-48", "category": "EARTH AND SPACE", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the name of the boundary between Earth's crust and mantle?", "tossup_answer": "Mohorovičić discontinuity", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-49", "category": "EARTH AND SPACE", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What planet has the largest ring system in the Solar System?", "tossup_answer": "Saturn", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-50", "category": "EARTH AND SPACE", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the apparent yearly path of the Sun against the background stars called?", "tossup_answer": "Ecliptic", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-51", "category": "EARTH AND SPACE", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What instrument measures atmospheric pressure?", "tossup_answer": "Barometer", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-52", "category": "EARTH AND SPACE", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What type of rock forms from cooled molten material?", "tossup_answer": "Igneous rock", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-53", "category": "EARTH AND SPACE", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the most abundant element in the universe?", "tossup_answer": "Hydrogen", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-54", "category": "EARTH AND SPACE", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What causes Earth's seasons?", "tossup_answer": "Earth's axial tilt as Earth orbits the Sun", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-55", "category": "EARTH AND SPACE", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What scale is commonly used to describe the magnitude of an earthquake based on seismic energy?", "tossup_answer": "Moment magnitude scale", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-56", "category": "EARTH AND SPACE", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What atmospheric layer contains most of Earth's ozone?", "tossup_answer": "Stratosphere", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-57", "category": "EARTH AND SPACE", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the name of the process by which water vapor becomes liquid water?", "tossup_answer": "Condensation", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-58", "category": "EARTH AND SPACE", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is a star's apparent shift against distant background stars as Earth changes position called?", "tossup_answer": "Parallax", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-59", "category": "EARTH AND SPACE", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What type of galaxy is the Milky Way?", "tossup_answer": "Barred spiral galaxy", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-60", "category": "EARTH AND SPACE", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What boundary separates the troposphere from the stratosphere?", "tossup_answer": "Tropopause", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-61", "category": "ENERGY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What renewable energy source uses moving air to turn turbines?", "tossup_answer": "Wind energy", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-62", "category": "ENERGY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What device converts sunlight directly into electricity?", "tossup_answer": "Photovoltaic cell", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-63", "category": "ENERGY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What fuel is commonly used in nuclear fission reactors?", "tossup_answer": "Uranium", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-64", "category": "ENERGY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What energy source uses heat from Earth's interior?", "tossup_answer": "Geothermal energy", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-65", "category": "ENERGY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the SI unit of energy?", "tossup_answer": "Joule", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-66", "category": "ENERGY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What type of energy is stored in chemical bonds?", "tossup_answer": "Chemical potential energy", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-67", "category": "ENERGY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What process releases energy by splitting a heavy atomic nucleus?", "tossup_answer": "Nuclear fission", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-68", "category": "ENERGY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What process powers the Sun by combining light atomic nuclei?", "tossup_answer": "Nuclear fusion", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-69", "category": "ENERGY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the term for the useful energy output divided by total energy input?", "tossup_answer": "Efficiency", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-70", "category": "ENERGY", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What device converts mechanical energy into electrical energy?", "tossup_answer": "Generator", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-71", "category": "MATH", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the derivative of x^2 with respect to x?", "tossup_answer": "2x", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-72", "category": "MATH", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the square root of 144?", "tossup_answer": "12", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-73", "category": "MATH", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the sum of the interior angles of a triangle?", "tossup_answer": "180 degrees", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-74", "category": "MATH", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the value of pi to three decimal places?", "tossup_answer": "3.142", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-75", "category": "MATH", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the slope of a horizontal line?", "tossup_answer": "0", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-76", "category": "MATH", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the probability of rolling a six on a fair six-sided die?", "tossup_answer": "1/6", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-77", "category": "MATH", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the area of a circle with radius r?", "tossup_answer": "πr^2", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-78", "category": "MATH", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the logarithm base 10 of 1000?", "tossup_answer": "3", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-79", "category": "MATH", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the next prime number after 29?", "tossup_answer": "31", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}, {"id": "offline-80", "category": "MATH", "difficulty": "HS", "source": "Offline Practice Bank", "tossup_question": "What is the mean of 4, 6, and 8?", "tossup_answer": "6", "tossup_format": "Short Answer", "bonus_question": null, "bonus_answer": null, "bonus_format": null}];
+
+let session = [];
+let position = 0;
+let locked = false;
+let history = Object.create(null);
+
+/* Storage is optional. The quiz never depends on it. */
+try {
+  const k = "__science_bowl_test__";
+  window.localStorage.setItem(k, "1");
+  window.localStorage.removeItem(k);
+  history = JSON.parse(window.localStorage.getItem("scienceBowlHistory") || "{}");
+  if (!history || typeof history !== "object") history = Object.create(null);
+} catch (e) {
+  history = Object.create(null);
+}
+
+const $ = id => document.getElementById(id);
+
+function saveHistory() {
+  try {
+    window.localStorage.setItem("scienceBowlHistory", JSON.stringify(history));
+  } catch (e) {}
+  updateStats();
+}
+
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g, ch => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  })[ch]);
+}
+
+function updateStats() {
+  const vals = Object.values(history);
+  const answered = vals.length;
+  const correct = vals.filter(x => x.correct).length;
+  const points = vals.reduce((n,x) => n + (x.correct ? 4 : 0), 0);
+  $("seen").textContent = answered;
+  $("correct").textContent = correct;
+  $("pct").textContent = answered ? Math.round(correct / answered * 100) + "%" : "0%";
+  $("score").textContent = points;
+
+  const by = {};
+  vals.forEach(x => {
+    if (!by[x.subject]) by[x.subject] = [0,0];
+    by[x.subject][1]++;
+    if (x.correct) by[x.subject][0]++;
+  });
+  $("subjectStats").textContent =
+    Object.entries(by).map(([s,v]) => `${s}: ${v[0]}/${v[1]} (${Math.round(v[0]/v[1]*100)}%)`).join(" • ")
+    || "No answers recorded yet.";
+}
+
+function getQuestions() {
+  const subject = $("subject").value;
+  return BANK.filter(q => !subject || q.category === subject);
+}
+
+function startPractice(useMissed=false) {
+  let pool = useMissed
+    ? getQuestions().filter(q => history[q.id] && !history[q.id].correct)
+    : getQuestions();
+
+  if (!pool.length) {
+    alert(useMissed ? "You have no missed questions for this subject yet." : "No questions match that subject.");
+    return;
+  }
+
+  const requested = Number($("count").value);
+  const n = Math.min(requested, pool.length);
+  session = pool.slice().sort(() => Math.random() - 0.5).slice(0, n);
+  position = 0;
+  $("setup").classList.add("hidden");
+  $("quiz").classList.remove("hidden");
+  render();
+}
+
+function render() {
+  const q = session[position];
+  locked = false;
+  $("meta").textContent = `Question ${position + 1} of ${session.length}`;
+  $("subjectTag").textContent = q.category;
+  $("prog").value = position + 1;
+  $("prog").max = session.length;
+  $("question").textContent = q.tossup_question;
+  $("answer").style.display = "none";
+  $("answer").className = "answer";
+  $("answer").innerHTML = "<b>Answer:</b> " + escapeHTML(q.tossup_answer) +
+    "<br><span class='muted'>Offline Practice Bank</span>";
+}
+
+function mark(correct) {
+  if (locked) return;
+  locked = true;
+  const q = session[position];
+  history[q.id] = {
+    correct,
+    subject:q.category,
+    question:q.tossup_question,
+    answer:q.tossup_answer,
+    at:Date.now()
+  };
+  saveHistory();
+  $("answer").style.display = "block";
+  $("answer").classList.toggle("wrong", !correct);
+}
+
+function nextQuestion() {
+  if (!locked) {
+    alert("Choose Correct or Incorrect first.");
+    return;
+  }
+  if (position + 1 < session.length) {
+    position++;
+    render();
+  } else {
+    $("quiz").classList.add("hidden");
+    $("setup").classList.remove("hidden");
+    alert("Practice complete! Your score has been updated.");
+  }
+}
+
+function endPractice() {
+  $("quiz").classList.add("hidden");
+  $("setup").classList.remove("hidden");
+}
+
+$("startBtn").addEventListener("click", () => startPractice(false));
+$("correctBtn").addEventListener("click", () => mark(true));
+$("incorrectBtn").addEventListener("click", () => mark(false));
+$("revealBtn").addEventListener("click", () => {
+  $("answer").style.display = "block";
+});
+$("nextBtn").addEventListener("click", nextQuestion);
+$("endBtn").addEventListener("click", endPractice);
+$("missedBtn").addEventListener("click", () => startPractice(true));
+$("resetBtn").addEventListener("click", () => {
+  if (confirm("Reset all saved progress?")) {
+    history = Object.create(null);
+    try { window.localStorage.removeItem("scienceBowlHistory"); } catch(e) {}
+    updateStats();
+  }
+});
+
+/* Startup diagnostics: if JavaScript runs, this message changes immediately. */
+$("status").textContent =
+  "READY • " + BANK.length + " questions embedded • JavaScript is running • Internet not required.";
+updateStats();
+</script>
+</body>
+</html>
